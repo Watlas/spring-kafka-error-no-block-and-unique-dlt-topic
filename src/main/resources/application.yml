@@ -1,4 +1,5 @@
 topic: my-topic
+topic2: my-topic2
 topic-dlt: my-global-topic-dlt
 retry-attempts: 2
 server:

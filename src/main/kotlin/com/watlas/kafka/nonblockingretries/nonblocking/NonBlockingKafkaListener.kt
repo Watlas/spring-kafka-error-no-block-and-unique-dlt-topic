@@ -37,16 +37,7 @@ class NonBlockingKafkaListener{
         backoff = Backoff(delay = 200, multiplier = 3.0, maxDelay = 0),
         numPartitions = "1",
         topicSuffixingStrategy = TopicSuffixingStrategy.SUFFIX_WITH_INDEX_VALUE,
-        dltStrategy = DltStrategy.NO_DLT,
-        exclude = [
-            DeserializationException::class,
-            SerializationException::class,
-            MessageConversionException::class,
-            ConversionException::class,
-            MethodArgumentResolutionException::class,
-            NoSuchMethodException::class,
-            ClassCastException::class
-        ]
+        dltStrategy = DltStrategy.FAIL_ON_ERROR,
     )
 
     @KafkaListener(
@@ -54,41 +45,29 @@ class NonBlockingKafkaListener{
         topics = ["\${topic}"],
     )
     fun onReceive(message: String, @Header(KafkaHeaders.RECEIVED_TOPIC) topic: String) {
-        try {
             log.info("processing message: $topic")
             throw Exception()
-        }catch (e: Exception) {
-           if(topic.contains("retry")){
-             this.sendToKafka(message)
-           }
-            throw e;
-            }
 
     }
 
 
-    @Async
-    fun sendToKafka(data: String?) {
-        Thread.sleep(20000)
-        val record: ProducerRecord<String, String> =  ProducerRecord<String, String>("my-global-topic-dlt", data)
-        val future: ListenableFuture<SendResult<String, String>> = kafkaTemplate!!.send(record)
-        future.addCallback(object : KafkaSendCallback<String, String> {
-            override fun onSuccess(result: SendResult<String?, String?>?) {
-                handleSuccess(data)
-            }
+    @RetryableTopic(
+        attempts = "\${retry-attempts}",
+        backoff = Backoff(delay = 200, multiplier = 3.0, maxDelay = 0),
+        numPartitions = "1",
+        topicSuffixingStrategy = TopicSuffixingStrategy.SUFFIX_WITH_INDEX_VALUE,
+        dltStrategy = DltStrategy.FAIL_ON_ERROR,
+    )
 
-            override fun onFailure(ex: KafkaProducerException) {
-                handleFailure(data, record, ex)
-            }
-        })
+    @KafkaListener(
+//        id = "\${spring.kafka.consumer.group-id}",
+        topics = ["\${topic2}"],
+    )
+    fun onReceive2(message: String, @Header(KafkaHeaders.RECEIVED_TOPIC) topic: String) {
+        log.info("processing message: $topic")
+        throw Exception()
+
     }
 
-    private fun handleFailure(data: String?, record: ProducerRecord<String, String>, ex: KafkaProducerException) {
-        println("failed to send message: $data")
-    }
-
-    private fun handleSuccess(data: String?) {
-        println("successfully sent message: $data")
-    }
 }
 
