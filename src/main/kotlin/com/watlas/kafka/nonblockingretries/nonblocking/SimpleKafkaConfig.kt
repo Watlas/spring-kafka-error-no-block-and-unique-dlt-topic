@@ -37,21 +37,6 @@ class SimpleKafkaConfig {
         KafkaTemplate(kafkaErrorProducerFactory(kafkaProperties))
 
     @Bean
-    fun producerFactory(): ProducerFactory<Int?, String?>? {
-        return DefaultKafkaProducerFactory(producerConfigs()!!)
-    }
-
-    @Bean
-    fun producerConfigs(): Map<String, Any>? {
-        val props: MutableMap<String, Any> = HashMap()
-        props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
-        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        // See https://kafka.apache.org/documentation/#producerconfigs for more properties
-        return props
-    }
-
-    @Bean
     fun kafkaTemplate(): KafkaTemplate<Int?, String?>? {
         return KafkaTemplate(producerFactory()!!)
     }
